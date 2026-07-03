@@ -176,7 +176,7 @@ export async function streamAnswer(
     if (needsWeb) {
       const results = await webSearch(question);
 
-      context = results.map((r) => `${r.title}: ${r.content}`).join("\n");
+      context = results.map((r: any) => `${r.title}: ${r.content}`).join("\n");
     }
 
     const prompt = `
@@ -199,7 +199,7 @@ ${question}
 
       onChunk(text);
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error?.status === 429) {
       onError?.("Too many requests. Try again shortly.");
     } else {

@@ -32,7 +32,7 @@ export async function webSearch(query: string) {
 
   const data = await res.json();
 
-  return data.results.map((r) => ({
+  return data.results.map((r: any) => ({
     title: r.title,
     url: r.url,
     content: r.content,

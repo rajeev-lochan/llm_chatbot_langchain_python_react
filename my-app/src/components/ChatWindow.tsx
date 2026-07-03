@@ -4,7 +4,6 @@ import "./responseAnswer.css";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import {
   addMessage,
-  initSession,
   loadChatHistory,
   saveChatTurn,
   updateLastMessage,
@@ -20,10 +19,6 @@ const ChatWindow: React.FC = () => {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    dispatch(initSession());
-  }, [dispatch]);
 
   useEffect(() => {
     if (sessionId) {
