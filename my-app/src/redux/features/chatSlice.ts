@@ -24,7 +24,8 @@ const initialState: ChatState = {
   error: null,
 };
 
-const chatHistoryUrl = "/api/chat-history";
+// const chatHistoryUrl = "/api/chat-history";
+const chatHistoryUrl = "https://your-backend.onrender.com";
 
 export const loadChatHistory = createAsyncThunk<
   ChatMessage[],
