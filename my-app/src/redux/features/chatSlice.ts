@@ -3,7 +3,7 @@ import {
   createSlice,
   type PayloadAction,
 } from "@reduxjs/toolkit";
-import { createSessionId, getOrCreateSessionId } from "../../utils/sessionId";
+import { getOrCreateSessionId } from "../../utils/sessionId";
 
 export type ChatMessage = {
   role: "user" | "assistant";
@@ -17,15 +17,7 @@ type ChatState = {
   error: string | null;
 };
 
-// const createSessionId = () => {
-//   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-//     return crypto.randomUUID();
-//   }
-//   return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-// };
-
 const initialState: ChatState = {
-  // sessionId: createSessionId(),
   sessionId: getOrCreateSessionId(),
   messages: [],
   status: "idle",
@@ -111,15 +103,6 @@ const chatSlice = createSlice({
       state.messages = [];
       state.error = null;
     },
-    initSession: (state) => {
-      if (!state.sessionId) {
-        const id = createSessionId();
-        state.sessionId = id;
-        setSessionId(id);
-      } else {
-        setSessionId(state.sessionId);
-      }
-    },
   },
   extraReducers: (builder) => {
     builder
@@ -155,7 +138,6 @@ export const {
   setMessages,
   setSessionId,
   clearChat,
-  initSession,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;
