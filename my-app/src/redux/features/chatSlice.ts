@@ -25,7 +25,8 @@ const initialState: ChatState = {
 };
 
 // const chatHistoryUrl = "/api/chat-history";
-const chatHistoryUrl = "https://your-backend.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL;
+const chatHistoryUrl = `${API_URL}/chat-history`;
 
 export const loadChatHistory = createAsyncThunk<
   ChatMessage[],
