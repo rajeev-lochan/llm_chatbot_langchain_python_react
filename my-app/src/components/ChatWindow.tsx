@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { streamAnswer } from "../hooks/langchain";
+import { useSpeech } from "../hooks/useSpeech";
 import "./ResponseAnswer.css";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import {
@@ -20,6 +21,15 @@ const ChatWindow: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const {
+    isListening,
+    voiceEnabled,
+    startListening,
+    stopListening,
+    speak,
+    toggleVoice,
+  } = useSpeech();
+
   useEffect(() => {
     if (sessionId) {
       dispatch(loadChatHistory(sessionId));
@@ -32,13 +42,33 @@ const ChatWindow: React.FC = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  // const handleMicClick = () => {
+  //   if (isListening) {
+  //     stopListening();
+  //   } else {
+  //     startListening((text) => {
+  //       setQuestion(text);
+  //     });
+  //   }
+  // };
 
-    const trimmed = question.trim();
+  const handleMicClick = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening(async (text) => {
+        setQuestion(text); // optional, user briefly sees what was recognized
+        await sendMessage(text);
+      });
+    }
+  };
+
+  const sendMessage = async (text: string) => {
+    const trimmed = text.trim();
     if (!trimmed || loading) return;
 
     const userMessage = { role: "user" as const, content: trimmed };
+
     setQuestion("");
     setError("");
     setLoading(true);
@@ -58,7 +88,7 @@ const ChatWindow: React.FC = () => {
       (errorMessage) => {
         streamError = errorMessage;
         setError(errorMessage);
-      }
+      },
     );
 
     if (!streamError) {
@@ -69,11 +99,18 @@ const ChatWindow: React.FC = () => {
             userMessage,
             { role: "assistant", content: assistantText },
           ],
-        })
+        }),
       );
+
+      speak(assistantText);
     }
 
     setLoading(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await sendMessage(question);
   };
 
   return (
@@ -82,6 +119,16 @@ const ChatWindow: React.FC = () => {
         <div className="header-top">
           <img src={logo} alt="Vadistra Logo" />
           <h1>Vadistra</h1>
+          <button
+            type="button"
+            className={`voice-toggle-btn ${voiceEnabled ? "voice-on" : "voice-off"}`}
+            onClick={toggleVoice}
+            title={
+              voiceEnabled ? "Mute voice assistant" : "Unmute voice assistant"
+            }
+          >
+            {voiceEnabled ? "🔊" : "🔇"}
+          </button>
         </div>
 
         <p className="subtitle">Suggests wisdom and intelligence</p>
@@ -108,14 +155,25 @@ const ChatWindow: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="input-box">
+        <button
+          type="button"
+          className={`mic-btn ${isListening ? "active" : ""}`}
+          onClick={handleMicClick}
+          disabled={loading}
+          title={isListening ? "Stop listening" : "Dictate question"}
+        >
+          {isListening ? "🛑" : "🎤"}
+        </button>
         <input
           type="text"
           value={question}
-          placeholder="Ask something..."
+          placeholder={
+            isListening ? "Listening... Speak now!" : "Ask something..."
+          }
           onChange={(e) => setQuestion(e.target.value)}
           disabled={loading}
         />
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={loading || isListening}>
           ➤
         </button>
       </form>
