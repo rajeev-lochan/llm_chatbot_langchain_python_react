@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { streamAnswer } from "../hooks/langchain";
-import "./responseAnswer.css";
+import "./ResponseAnswer.css";
 import { useAppDispatch, useAppSelector } from "../redux/hooks";
 import {
   addMessage,
