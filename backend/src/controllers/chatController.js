@@ -35,6 +35,7 @@ export async function fetchChatHistory(req, res) {
     messages: rows.map((row) => ({
       role: row.role,
       content: row.content,
+      image: row.image,
       createdAt: row.created_at,
     })),
   });

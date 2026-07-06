@@ -17,4 +17,8 @@ export async function ensureSchema() {
     CREATE INDEX IF NOT EXISTS chat_messages_session_created_at_idx
     ON chat_messages (session_id, created_at, id)
   `;
+
+  await sql`
+    ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS image TEXT
+  `;
 }

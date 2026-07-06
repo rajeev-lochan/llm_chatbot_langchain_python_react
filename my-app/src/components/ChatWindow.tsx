@@ -20,6 +20,9 @@ const ChatWindow: React.FC = () => {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     isListening,
@@ -52,24 +55,64 @@ const ChatWindow: React.FC = () => {
   //   }
   // };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setSelectedImage(event.target.result as string);
+      }
+    };
+    reader.onerror = (err) => {
+      console.error("FileReader error:", err);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const clearSelectedImage = () => {
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleMicClick = () => {
     if (isListening) {
       stopListening();
     } else {
       startListening(async (text) => {
-        setQuestion(text); // optional, user briefly sees what was recognized
-        await sendMessage(text);
+        setQuestion(text);
+        await sendMessage(text, selectedImage || undefined);
       });
     }
   };
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (text: string, imageToSubmit?: string) => {
     const trimmed = text.trim();
-    if (!trimmed || loading) return;
+    if ((!trimmed && !imageToSubmit) || loading) return;
 
-    const userMessage = { role: "user" as const, content: trimmed };
+    const userMessage = {
+      role: "user" as const,
+      content: trimmed,
+      image: imageToSubmit,
+    };
 
     setQuestion("");
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     setError("");
     setLoading(true);
 
@@ -81,6 +124,7 @@ const ChatWindow: React.FC = () => {
 
     await streamAnswer(
       trimmed,
+      imageToSubmit,
       (chunk) => {
         assistantText += chunk;
         dispatch(updateLastMessage(assistantText));
@@ -110,7 +154,44 @@ const ChatWindow: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await sendMessage(question);
+    await sendMessage(question, selectedImage || undefined);
+  };
+
+  const renderMessageContent = (content: string) => {
+    const markdownImageRegex = /!\[(.*?)\]\((.*?)\)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = markdownImageRegex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(content.substring(lastIndex, match.index));
+      }
+
+      const alt = match[1];
+      const url = match[2];
+
+      parts.push(
+        <div className="generated-image-container" key={match.index}>
+          <img
+            src={url}
+            alt={alt}
+            className="generated-image"
+            onLoad={() => {
+              chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }}
+          />
+        </div>
+      );
+
+      lastIndex = markdownImageRegex.lastIndex;
+    }
+
+    if (lastIndex < content.length) {
+      parts.push(content.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : content;
   };
 
   return (
@@ -145,7 +226,16 @@ const ChatWindow: React.FC = () => {
 
           return (
             <div key={i} className={`msg ${msg.role}`}>
-              {msg.content}
+              {msg.image && (
+                <div className="chat-msg-image-wrapper">
+                  <img
+                    src={msg.image}
+                    alt="Uploaded attachment"
+                    className="chat-msg-image"
+                  />
+                </div>
+              )}
+              {msg.content && <span className="chat-msg-text">{renderMessageContent(msg.content)}</span>}
             </div>
           );
         })}
@@ -154,7 +244,41 @@ const ChatWindow: React.FC = () => {
         <div ref={chatEndRef} />
       </div>
 
+      {selectedImage && (
+        <div className="image-preview-container">
+          <img
+            src={selectedImage}
+            alt="Selected preview"
+            className="image-preview"
+          />
+          <button
+            type="button"
+            onClick={clearSelectedImage}
+            className="clear-image-btn"
+            title="Remove image"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="input-box">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImageChange}
+          accept="image/*"
+          style={{ display: "none" }}
+        />
+        <button
+          type="button"
+          onClick={triggerFileInput}
+          className="attach-btn"
+          disabled={loading}
+          title="Upload image"
+        >
+          📷
+        </button>
         <button
           type="button"
           className={`mic-btn ${isListening ? "active" : ""}`}

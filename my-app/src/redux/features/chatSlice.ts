@@ -8,6 +8,7 @@ import { getOrCreateSessionId } from "../../utils/sessionId";
 export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
+  image?: string;
 };
 
 type ChatState = {
@@ -47,6 +48,7 @@ export const loadChatHistory = createAsyncThunk<
     ? data.messages.map((message: ChatMessage) => ({
         role: message.role,
         content: message.content,
+        image: message.image,
       }))
     : [];
 });
